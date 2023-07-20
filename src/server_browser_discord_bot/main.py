@@ -51,7 +51,7 @@ async def on_ready():
 
         new_message = '.\n'
         new_message += '```\n'
-        new_message += tabulate.tabulate(servers, headers=['Name', 'Current Map', 'Player Count', 'Server Address'])
+        new_message += tabulate.tabulate(servers, headers=['Name', 'Current Map', 'Player Count', 'Server Address'], tablefmt="fancy_grid") 
         new_message += '```'
         
         # Fetch last message in the channel
