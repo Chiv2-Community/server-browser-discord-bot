@@ -15,12 +15,12 @@ args.add_argument('--token', help='Discord bot token')
 args.add_argument('--channel', help='Discord channel ID (integer)')
 args.add_argument('--api-host', required=False, default="servers.polehammer.net", help='API host')
 args.add_argument('--api-path', required=False, default="/api/v1/servers", help='API path')
-args = args.parse_args()
+inputs = args.parse_args()
 
-TOKEN = args.token  
-CHANNEL_ID = int(args.channel)
-API_HOST = args.api_host
-API_PATH = args.api_path
+TOKEN = inputs.token  
+CHANNEL_ID = int(inputs.channel)
+API_HOST = inputs.api_host
+API_PATH = inputs.api_path
 
 INTENTS = discord.Intents.default()
 client = discord.Client(intents=INTENTS)
