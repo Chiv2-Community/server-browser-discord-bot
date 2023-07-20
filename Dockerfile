@@ -24,4 +24,4 @@ COPY . /code
 RUN poetry config virtualenvs.create false \
   && poetry install --no-dev --no-interaction --no-ansi
 
-ENTRYPOINT ["poetry", "run", "python3", "server_browser_discord_bot/main.py"]
+ENTRYPOINT ["poetry", "run", "python3", "src/server_browser_discord_bot/main.py"]
