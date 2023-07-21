@@ -15,12 +15,14 @@ args.add_argument('--token', help='Discord bot token')
 args.add_argument('--channel', help='Discord channel ID (integer)')
 args.add_argument('--api-host', required=False, default="servers.polehammer.net", help='API host')
 args.add_argument('--api-path', required=False, default="/api/v1/servers", help='API path')
+args.add_argument('--update-interval', required=False, default=5, help='Update interval in seconds')
 inputs = args.parse_args()
 
 TOKEN = inputs.token  
 CHANNEL_ID = int(inputs.channel)
 API_HOST = inputs.api_host
 API_PATH = inputs.api_path
+UPDATE_INTERVAL = int(inputs.update_interval) # in seconds
 
 INTENTS = discord.Intents.default()
 client = discord.Client(intents=INTENTS)
@@ -45,13 +47,13 @@ async def on_ready():
         servers = [[
             server['name'],
             server['current_map'],
-            server['player_count'],
             f"{server['ip_address']}:{server['ports']['game']}",
+            server['player_count'],
         ] for server in server_info['servers']]
 
         new_message = '.\n'
         new_message += '```\n'
-        new_message += tabulate.tabulate(servers, headers=['Name', 'Current Map', 'Player Count', 'Server Address'], tablefmt="fancy_grid") 
+        new_message += tabulate.tabulate(servers, headers=['Name', 'Current Map', 'Server Address', 'Player Count'], tablefmt="fancy_grid") 
         new_message += '```'
         
         # Fetch last message in the channel
@@ -69,7 +71,7 @@ async def on_ready():
             await channel.send(new_message)
 
         print("Sleeping for 60 seconds")
-        await asyncio.sleep(60)  # Wait a minute before updating again
+        await asyncio.sleep(UPDATE_INTERVAL)  # Wait a minute before updating again
 
 if __name__ == "__main__":
     print("Starting bot")
