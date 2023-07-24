@@ -9,7 +9,6 @@ import tabulate
 
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
-
 args = argparse.ArgumentParser()
 args.add_argument('--token', help='Discord bot token')
 args.add_argument('--channel', help='Discord channel ID (integer)')
@@ -51,10 +50,10 @@ async def on_ready():
             server['player_count'],
         ] for server in server_info['servers']]
 
-        new_message = '.\n'
-        new_message += '```\n'
+        new_message = '```\n'
         new_message += tabulate.tabulate(servers, headers=['Name', 'Current Map', 'Server Address', 'Player Count'], tablefmt="fancy_grid") 
-        new_message += '```'
+        new_message += '```\n'
+        new_message += 'Install the launcher to join private servers: https://github.com/Chiv2-Community/C2GUILauncher/releases/latest.\n'
         
         # Fetch last message in the channel
         last_message = None
