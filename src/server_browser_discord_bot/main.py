@@ -1,3 +1,5 @@
+from ast import Dict
+from typing import Any, Optional
 import discord
 import requests
 import asyncio
@@ -28,52 +30,61 @@ client = discord.Client(intents=INTENTS)
 
 def get_server_info():
     print(f"Fetching server info from http://{API_HOST}{API_PATH}")
-    result = requests.get(f"http://{API_HOST}{API_PATH}")
-    if result.status_code != 200:
-        print(f"Error fetching server info: {result.status_code}")
-        return []
+    try:
+        result = requests.get(f"http://{API_HOST}{API_PATH}")
+        if result.status_code != 200:
+            print(f"Error fetching server info: {result.status_code}")
+            return None
 
-    return result.json()
+        return result.json()
+    except Exception as e:
+        print(f"Error fetching server info: {e}")
+        return None
 
 
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user.name} ({client.user.id})")
     while not client.is_closed():
-        channel = client.get_channel(CHANNEL_ID)
-        server_info = get_server_info()
+        try:
+            print("Sleeping for " + str(UPDATE_INTERVAL) + " seconds")
+            await asyncio.sleep(UPDATE_INTERVAL)  # Wait a minute before updating again
 
-        print(f"Found {len(server_info['servers'])} servers")
+            channel = client.get_channel(CHANNEL_ID)
+            server_info = get_server_info()
+            if not server_info:
+                continue
 
-        servers = [[
-            server['name'],
-            server['current_map'],
-            f"{server['ip_address']}:{server['ports']['game']}",
-            server['player_count'],
-        ] for server in server_info['servers']]
+            print(f"Found {len(server_info['servers'])} servers")
 
-        new_message = '```\n'
-        new_message += tabulate.tabulate(servers, headers=['Name', 'Current Map', 'Server Address', 'Player Count'], tablefmt="fancy_grid") 
-        new_message += '```\n'
-        new_message += 'Install the launcher to join private servers: https://github.com/Chiv2-Community/C2GUILauncher/releases/latest.\n'
+            servers = [[
+                server['name'],
+                server['current_map'],
+                f"{server['ip_address']}:{server['ports']['game']}",
+                server['player_count'],
+            ] for server in server_info['servers']]
 
-        
-        # Fetch last message in the channel
-        last_message = None
-        async for message in channel.history(limit=1):
-            last_message = message
+            new_message = '```\n'
+            new_message += tabulate.tabulate(servers, headers=['Name', 'Current Map', 'Server Address', 'Player Count'], tablefmt="fancy_grid") 
+            new_message += '```\n'
+            new_message += 'Install the launcher to join private servers: https://github.com/Chiv2-Community/C2GUILauncher/releases/latest.\n'
+
+            
+            # Fetch last message in the channel
+            last_message = None
+            async for message in channel.history(limit=1):
+                last_message = message
 
 
-        # If the last message was sent by our bot, we'll edit it. If not, we'll send a new message.
-        if last_message and last_message.author == client.user:
-            print("Editing last message")
-            await last_message.edit(content=new_message)
-        else:
-            print("Sending new message")
-            await channel.send(new_message)
-
-        print("Sleeping for 60 seconds")
-        await asyncio.sleep(UPDATE_INTERVAL)  # Wait a minute before updating again
+            # If the last message was sent by our bot, we'll edit it. If not, we'll send a new message.
+            if last_message and last_message.author == client.user:
+                print("Editing last message")
+                await last_message.edit(content=new_message)
+            else:
+                print("Sending new message")
+                await channel.send(new_message)
+        except Exception as e:
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     print("Starting bot")
