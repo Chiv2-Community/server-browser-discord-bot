@@ -60,14 +60,15 @@ async def on_ready():
             servers = [[
                 server['name'],
                 server['current_map'],
-                f"{server['ip_address']}:{server['ports']['game']}",
                 server['player_count'],
+                "Yes" if server.get('password_protected', False) else "No",
+                server['description']
             ] for server in server_info['servers']]
 
             new_message = '```\n'
-            new_message += tabulate.tabulate(servers, headers=['Name', 'Current Map', 'Server Address', 'Player Count'], tablefmt="fancy_grid") 
+            new_message += tabulate.tabulate(servers, headers=['Name', 'Current Map', 'Player Count', 'Password', 'Server Description'], tablefmt="fancy_grid") 
             new_message += '```\n'
-            new_message += 'Install the launcher to join private servers: https://github.com/Chiv2-Community/C2GUILauncher/releases/latest.\n'
+            new_message += 'Install the launcher to join private servers: https://github.com/Chiv2-Community/UnchainedLauncher/releases/latest.\n'
 
             
             # Fetch last message in the channel
