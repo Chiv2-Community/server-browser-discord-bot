@@ -1,4 +1,5 @@
 from ast import Dict
+import traceback
 from typing import Any, Optional
 import discord
 import requests
@@ -35,10 +36,11 @@ def get_server_info():
         if result.status_code != 200:
             print(f"Error fetching server info: {result.status_code}")
             return None
-
+        
         return result.json()
     except Exception as e:
         print(f"Error fetching server info: {e}")
+        traceback.print_exc()
         return None
 
 
@@ -51,9 +53,13 @@ async def on_ready():
             await asyncio.sleep(UPDATE_INTERVAL)  # Wait a minute before updating again
 
             channel = client.get_channel(CHANNEL_ID)
+            
             server_info = get_server_info()
             if not server_info:
                 continue
+
+            # Get all messages in the channel
+            messages = await channel.history(limit=None).flatten()
 
             print(f"Found {len(server_info['servers'])} servers")
 
@@ -61,14 +67,26 @@ async def on_ready():
                 server['name'],
                 server['current_map'],
                 server['player_count'],
-                "Yes" if server.get('password_protected', False) else "No",
+                ":reversecheckmark:" if server.get('password_protected', False) else ":x:",
                 server['description']
             ] for server in server_info['servers']]
 
-            new_message = '```\n'
-            new_message += tabulate.tabulate(servers, headers=['Name', 'Current Map', 'Player Count', 'Password', 'Server Description'], tablefmt="fancy_grid") 
-            new_message += '```\n'
-            new_message += 'Install the launcher to join private servers: https://github.com/Chiv2-Community/UnchainedLauncher/releases/latest.\n'
+            new_embed = discord.Embed(
+                title="Chivalry 2 Community Server List", 
+                color=0x00ccff,
+            )
+
+            new_embed.set_footer(text="Install the launcher to join private servers: https://github.com/Chiv2-Community/UnchainedLauncher/releases/latest")
+
+            servers.sort(key=lambda x: x[0])
+
+            for [name, current_map, player_count, password_protected, description] in servers:
+                current_server_message = filter(lambda x: x.embeds and x.embeds[0].title == name, messages)
+                new_embed.add_field(
+                    name=name, 
+                    inline=True,
+                    value=f"**Map:** {current_map}\n**Players:** {player_count}\n**Password Protected:** {password_protected}\n**Description:** {description}"
+                )
 
             
             # Fetch last message in the channel
@@ -80,12 +98,13 @@ async def on_ready():
             # If the last message was sent by our bot, we'll edit it. If not, we'll send a new message.
             if last_message and last_message.author == client.user:
                 print("Editing last message")
-                await last_message.edit(content=new_message)
+                await last_message.edit(content=None, embed=new_embed)
             else:
                 print("Sending new message")
-                await channel.send(new_message)
+                await channel.send(new_embed)
         except Exception as e:
             print(f"Error: {e}")
+            traceback.print_exc()
 
 if __name__ == "__main__":
     print("Starting bot")

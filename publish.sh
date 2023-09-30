@@ -7,7 +7,7 @@ VERSION=$(grep -m 1 version pyproject.toml | tr -s ' ' | tr -d '"' | tr -d "'" |
 
 /bin/bash ./ci.sh
 
-docker buildx build . \
+docker buildx build --platform linux/amd64 . \
   -t "jacoby6000/chivalry2-unofficial-server-browser-discord-bot:$VERSION" \
   -t "jacoby6000/chivalry2-unofficial-server-browser-discord-bot:latest" \
   --push
