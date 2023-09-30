@@ -74,6 +74,9 @@ async def on_ready():
                 password_protected = ":reversecheckmark:" if server.get('password_protected', False) else ":x:"
                 description = server['description']
 
+                if current_map == "Unknown":
+                    continue
+
                 embed = discord.Embed(title=name, color=hash_to_color(hash(name)))
                 embed.add_field(name="Map", value=current_map, inline=True)
                 embed.add_field(name="Players", value=str(player_count) + " / " + str(max_players), inline=True)
