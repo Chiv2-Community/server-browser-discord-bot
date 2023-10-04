@@ -71,7 +71,7 @@ async def on_ready():
                 current_map = server['current_map']
                 player_count = server['player_count']
                 max_players = server['max_players']
-                password_protected = ":reversecheckmark:" if server.get('password_protected', False) else ":x:"
+                password_protected = ":lock:" if server.get('password_protected', False) else ":unlock:"
                 description = server['description']
 
                 if current_map == "Unknown":
