@@ -77,11 +77,10 @@ async def on_ready():
                 if current_map == "Unknown":
                     continue
 
-                embed = discord.Embed(title=name, color=hash_to_color(hash(name)))
+                embed = discord.Embed(title=name, description=description, color=hash_to_color(hash(name)))
                 embed.add_field(name="Map", value=current_map, inline=True)
                 embed.add_field(name="Players", value=str(player_count) + " / " + str(max_players), inline=True)
                 embed.add_field(name="Password Protected", value=password_protected, inline=True)
-                embed.add_field(name="Description", value=description, inline=True)
 
                 # Check if we've already posted about this server
                 if unique_id in message_buffer:
