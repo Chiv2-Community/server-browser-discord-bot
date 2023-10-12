@@ -1,5 +1,6 @@
 from ast import Dict
 import colorsys
+from datetime import datetime
 import traceback
 from typing import Any, Optional
 import discord
@@ -10,6 +11,7 @@ import json
 import argparse
 import logging
 import tabulate
+import time
 
 # logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
@@ -50,61 +52,76 @@ async def on_ready():
     print(f"Logged in as {client.user.name} ({client.user.id})")
 
     await reset_channel()
+    channel = client.get_channel(CHANNEL_ID)
 
     message_buffer: Dict[str, discord.Embed] = {}
+    last_updated_message: Optional[discord.Message] = None
     while not client.is_closed():
         try:
-            print("Sleeping for " + str(UPDATE_INTERVAL) + " seconds")
-            await asyncio.sleep(UPDATE_INTERVAL)  # Wait a minute before updating again
-
-            channel = client.get_channel(CHANNEL_ID)
-
-            server_info = get_server_info()
-            if not server_info:
-                continue
-
-            print(f"Found {len(server_info['servers'])} servers")
-
-            for server in server_info['servers']:
-                unique_id = server['unique_id']
-                name = server['name']
-                current_map = server['current_map']
-                player_count = server['player_count']
-                max_players = server['max_players']
-                password_protected = ":lock:" if server.get('password_protected', False) else ":unlock:"
-                description = server['description']
-
-                if current_map == "Unknown":
-                    continue
-
-                embed = discord.Embed(title=name, description=description, color=hash_to_color(hash(name)))
-                embed.add_field(name="Map", value=current_map, inline=True)
-                embed.add_field(name="Players", value=str(player_count) + " / " + str(max_players), inline=True)
-                embed.add_field(name="Password Protected", value=password_protected, inline=True)
-
-                # Check if we've already posted about this server
-                if unique_id in message_buffer:
-                    # Update the message
-                    await message_buffer[unique_id].edit(embed=embed)
-                else:
-                    # Otherwise, create a new message
-                    sent_message = await channel.send(embed=embed, silent=True)
-                    message_buffer[unique_id] = sent_message
-
-            # Check for servers that no longer exist and delete their messages
-            to_delete = []
-            current_server_ids = {server['unique_id'] for server in server_info['servers']}
-            for message_id, _ in message_buffer.items():
-                if message_id not in current_server_ids:
-                    to_delete.append(message_id)
-
-            for message_id in to_delete:
-                await message_buffer[message_id].delete()
-                del message_buffer[message_id]
-
+            await update_channel(message_buffer, last_updated_message, channel) 
         except Exception as e:
             print(f"Error: {e}")
             traceback.print_exc()
+
+async def update_channel(message_buffer, last_updated_message, channel):
+    await asyncio.sleep(UPDATE_INTERVAL)  # Wait a minute before updating again
+
+    server_info = get_server_info()
+    if not server_info:
+        return
+
+    if last_updated_message:
+        await last_updated_message.edit(content=f"Last updated: <t:{str(int(time.time()))}:t>")
+    else:
+        last_updated_message = await channel.send(content=f"Last updated: <t:{str(int(time.time()))}:t>", silent=True)
+
+    print(f"Found {len(server_info['servers'])} servers")
+
+    tasks = [process_server(server, message_buffer, channel) for server in server_info['servers']]
+    await asyncio.gather(*tasks)
+
+    # Check for servers that no longer exist and delete their messages
+    to_delete = []
+    current_server_ids = {server['unique_id'] for server in server_info['servers']}
+    for message_id, _ in message_buffer.items():
+        if message_id not in current_server_ids:
+            to_delete.append(message_id)
+
+    tasks = [delete_message(message_id, message_buffer) for message_id in to_delete]
+    await asyncio.gather(*tasks)
+
+async def delete_message(message_id, message_buffer):
+    await message_buffer[message_id].delete()
+    del message_buffer[message_id]
+
+async def process_server(server, message_buffer, channel):
+    unique_id = server['unique_id']
+    name = server['name']
+    current_map = server['current_map']
+    player_count = server['player_count']
+    max_players = server['max_players']
+    description = server['description']
+
+    password_protected = ":closed_lock_with_key:" if server.get('password_protected', False) else ":globe_with_meridians:"
+
+    name = password_protected + " " + name
+
+    if current_map == "Unknown":
+        return
+
+    embed = discord.Embed(title=name, description=description, color=hash_to_color(hash(name)))
+    embed.add_field(name="Map", value=current_map, inline=True)
+    embed.add_field(name="Players", value=str(player_count) + " / " + str(max_players), inline=True)
+
+    # Check if we've already posted about this server
+    if unique_id in message_buffer:
+        # Update the message
+        await message_buffer[unique_id].edit(embed=embed)
+    else:
+        # Otherwise, create a new message
+        sent_message = await channel.send(embed=embed, silent=True)
+        message_buffer[unique_id] = sent_message
+
 
 async def reset_channel():
     try:
