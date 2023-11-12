@@ -58,6 +58,11 @@ async def on_ready():
     last_updated_message: Optional[discord.Message] = None
     while not client.is_closed():
         try:
+            if last_updated_message:
+                await last_updated_message.edit(content=f"Last updated: <t:{str(int(time.time()))}:t>")
+            else:
+                last_updated_message = await channel.send(content=f"Last updated: <t:{str(int(time.time()))}:t>", silent=True)
+
             await update_channel(message_buffer, last_updated_message, channel) 
         except Exception as e:
             print(f"Error: {e}")
@@ -69,12 +74,7 @@ async def update_channel(message_buffer, last_updated_message, channel):
     server_info = get_server_info()
     if not server_info:
         return
-
-    if last_updated_message:
-        await last_updated_message.edit(content=f"Last updated: <t:{str(int(time.time()))}:t>")
-    else:
-        last_updated_message = await channel.send(content=f"Last updated: <t:{str(int(time.time()))}:t>", silent=True)
-
+    
     print(f"Found {len(server_info['servers'])} servers")
 
     tasks = [process_server(server, message_buffer, channel) for server in server_info['servers']]
@@ -114,7 +114,9 @@ async def process_server(server, message_buffer, channel):
     embed.add_field(name="Map", value=current_map, inline=True)
     embed.add_field(name="Players", value=str(player_count) + " / " + str(max_players), inline=True)
     if len(mods) > 0:
-        embed.add_field(name="Mods", value=", ".join(list(map(lambda mod: mod["name"] + " " + mod["version"], mods)), inline=False))
+        modsString = list(map(lambda mod: mod["name"] + " " + mod["version"], mods))
+        finalModsString = str.join(", ", modsString)
+        embed.add_field(name="Mods", value=finalModsString, inline=False)
 
     # Check if we've already posted about this server
     if unique_id in message_buffer:
