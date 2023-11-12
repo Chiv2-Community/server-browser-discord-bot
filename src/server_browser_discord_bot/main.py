@@ -101,6 +101,7 @@ async def process_server(server, message_buffer, channel):
     player_count = server['player_count']
     max_players = server['max_players']
     description = server['description']
+    mods = server.get('mods', [])
 
     password_protected = ":closed_lock_with_key:" if server.get('password_protected', False) else ":globe_with_meridians:"
 
@@ -112,6 +113,8 @@ async def process_server(server, message_buffer, channel):
     embed = discord.Embed(title=name, description=description, color=hash_to_color(hash(name)))
     embed.add_field(name="Map", value=current_map, inline=True)
     embed.add_field(name="Players", value=str(player_count) + " / " + str(max_players), inline=True)
+    if len(mods) > 0:
+        embed.add_field(name="Mods", value=", ".join(list(map(lambda mod: mod["name"] + " " + mod["version"], mods)), inline=False))
 
     # Check if we've already posted about this server
     if unique_id in message_buffer:
